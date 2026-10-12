@@ -1,5 +1,8 @@
 import asyncio
+import http.server
 import os
+import socketserver
+import threading
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -18,6 +21,22 @@ TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = "852128844"  # Your personal Telegram ID
 
 
+# --- DUMMY HTTP SERVER FOR RENDER WEB SERVICE PORT CHECK ---
+def run_dummy_server():
+  port = int(os.getenv("PORT", 8080))
+
+  class SimpleHandler(http.server.SimpleHTTPRequestHandler):
+
+    def do_GET(self):
+      self.send_response(200)
+      self.end_headers()
+      self.wfile.write(b"Habesha SMM Bot is live!")
+
+  with socketserver.TCPServer(("", port), SimpleHandler) as httpd:
+    httpd.serve_forever()
+
+
+# --- BOT HANDLERS ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   context.user_data.clear()
 
@@ -404,7 +423,10 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 def main():
-  # Fix for Python 3.14+ asyncio event loop creation issue
+  # Start dummy HTTP server in a separate thread for Render port binding
+  threading.Thread(target=run_dummy_server, daemon=True).start()
+
+  # Fix for Python 3.14+ asyncio event loop
   try:
     loop = asyncio.get_event_loop()
   except RuntimeError:
