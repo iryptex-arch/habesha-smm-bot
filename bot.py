@@ -441,6 +441,13 @@ def main():
       Application.builder().token(TOKEN).request(custom_request).build()
   )
 
+  # Clear any stuck webhooks on startup to prevent conflict errors
+  async def post_init(application: Application):
+    await application.bot.delete_webhook(drop_pending_updates=True)
+    print("🧹 Cleared old webhooks successfully!")
+
+  app.post_init = post_init
+
   app.add_handler(CommandHandler("start", start))
   app.add_handler(CallbackQueryHandler(button_click))
   app.add_handler(
