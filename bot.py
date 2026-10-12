@@ -18,7 +18,7 @@ from telegram.request import HTTPXRequest
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = "852128844"  # Your personal Telegram User ID
+ADMIN_ID = "852128844"  # We will verify this below!
 
 
 # --- DUMMY HTTP SERVER FOR RENDER WEB SERVICE ---
@@ -38,6 +38,8 @@ def run_dummy_server():
 
 # --- BOT HANDLERS ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+  user = update.effective_user
+  print(f"DEBUG: User interacting with bot has ID: {user.id}")
   context.user_data.clear()
 
   keyboard = [
@@ -53,8 +55,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   reply_markup = InlineKeyboardMarkup(keyboard)
 
   await update.message.reply_text(
-      "🤖 Welcome to Habesha SMM Shop!\n\nChoose a platform:",
+      f"🤖 Welcome to Habesha SMM Shop!\n\n"
+      f"🔍 Your Telegram User ID is: `{user.id}`\n\n"
+      "Choose a platform:",
       reply_markup=reply_markup,
+      parse_mode="Markdown",
   )
 
 
