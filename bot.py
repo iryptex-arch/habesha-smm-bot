@@ -18,7 +18,7 @@ from telegram.request import HTTPXRequest
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = "852128844"  # We will verify this below!
+ADMIN_ID = "-1004491513977"  # 🔴 Replace with your actual Channel ID (starts with -100)
 
 
 # --- DUMMY HTTP SERVER FOR RENDER WEB SERVICE ---
@@ -38,8 +38,6 @@ def run_dummy_server():
 
 # --- BOT HANDLERS ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  user = update.effective_user
-  print(f"DEBUG: User interacting with bot has ID: {user.id}")
   context.user_data.clear()
 
   keyboard = [
@@ -55,11 +53,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   reply_markup = InlineKeyboardMarkup(keyboard)
 
   await update.message.reply_text(
-      f"🤖 Welcome to Habesha SMM Shop!\n\n"
-      f"🔍 Your Telegram User ID is: `{user.id}`\n\n"
-      "Choose a platform:",
+      "🤖 Welcome to Habesha SMM Shop!\n\nChoose a platform:",
       reply_markup=reply_markup,
-      parse_mode="Markdown",
   )
 
 
@@ -329,7 +324,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# --- FORWARD TEXT TRANSACTION TO ADMIN ---
+# --- FORWARD TEXT TRANSACTION TO CHANNEL ---
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
   current_step = context.user_data.get("step")
 
@@ -359,7 +354,6 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_pkg = context.user_data.get("selected_package")
     user_link = context.user_data.get("user_link")
 
-    # Send Notification Direct to Your Personal Telegram
     if ADMIN_ID:
       try:
         admin_message = (
@@ -370,9 +364,9 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🔗 Link: {user_link}\n"
             f"🧾 Payment Ref: {payment_info}"
         )
-        await context.bot.send_message(chat_id=int(ADMIN_ID), text=admin_message)
+        await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message)
       except Exception as e:
-        print(f"Failed to forward order to admin: {e}")
+        print(f"Failed to forward order to channel: {e}")
 
     await update.message.reply_text(
         "🎉 Order Submitted Successfully!\n\n"
@@ -391,7 +385,7 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# --- FORWARD SCREENSHOT TRANSACTION TO ADMIN ---
+# --- FORWARD SCREENSHOT TRANSACTION TO CHANNEL ---
 async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
   current_step = context.user_data.get("step")
 
@@ -401,7 +395,6 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
     user_link = context.user_data.get("user_link")
     photo_file = update.message.photo[-1].file_id
 
-    # Send Photo Direct to Your Personal Telegram
     if ADMIN_ID:
       try:
         admin_caption = (
@@ -412,10 +405,10 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
             f"🔗 Link: {user_link}"
         )
         await context.bot.send_photo(
-            chat_id=int(ADMIN_ID), photo=photo_file, caption=admin_caption
+            chat_id=ADMIN_ID, photo=photo_file, caption=admin_caption
         )
       except Exception as e:
-        print(f"Failed to forward photo to admin: {e}")
+        print(f"Failed to forward photo to channel: {e}")
 
     await update.message.reply_text(
         "🎉 Screenshot Order Submitted Successfully!\n\n"
@@ -446,7 +439,6 @@ def main():
       Application.builder().token(TOKEN).request(custom_request).build()
   )
 
-  # Clear any stuck webhooks on startup to prevent conflict errors
   async def post_init(application: Application):
     await application.bot.delete_webhook(drop_pending_updates=True)
     print("🧹 Cleared old webhooks successfully!")
