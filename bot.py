@@ -18,10 +18,10 @@ from telegram.request import HTTPXRequest
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = "852128844"  # Your personal Telegram ID
+ADMIN_ID = "852128844"  # Your personal Telegram User ID
 
 
-# --- DUMMY HTTP SERVER FOR RENDER WEB SERVICE PORT CHECK ---
+# --- DUMMY HTTP SERVER FOR RENDER WEB SERVICE ---
 def run_dummy_server():
   port = int(os.getenv("PORT", 8080))
 
@@ -60,9 +60,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
   query = update.callback_query
+  data = query.data
   await query.answer()
 
-  if query.data == "instagram":
+  if data == "instagram":
     keyboard = [
         [
             InlineKeyboardButton("👤 Followers", callback_data="ig_followers"),
@@ -78,7 +79,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📸 Instagram Services\n\nChoose a service:", reply_markup=reply_markup
     )
 
-  elif query.data == "ig_followers":
+  elif data == "ig_followers":
     keyboard = [
         [InlineKeyboardButton("1K Followers — 500 ብር", callback_data="ig_f_1k")],
         [InlineKeyboardButton("5K Followers — 2,300 ብር", callback_data="ig_f_5k")],
@@ -103,7 +104,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📈 Instagram Followers\n\nSelect a package:", reply_markup=reply_markup
     )
 
-  elif query.data == "ig_likes":
+  elif data == "ig_likes":
     keyboard = [
         [InlineKeyboardButton("1K Likes — 300 ብር", callback_data="ig_l_1k")],
         [InlineKeyboardButton("5K Likes — 1,200 ብር", callback_data="ig_l_5k")],
@@ -123,7 +124,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "❤️ Instagram Likes\n\nSelect a package:", reply_markup=reply_markup
     )
 
-  elif query.data == "ig_views":
+  elif data == "ig_views":
     keyboard = [
         [InlineKeyboardButton("5K Views — 500 ብር", callback_data="ig_v_5k")],
         [InlineKeyboardButton("10K Views — 800 ብር", callback_data="ig_v_10k")],
@@ -138,7 +139,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👁️ Instagram Views\n\nSelect a package:", reply_markup=reply_markup
     )
 
-  elif query.data == "tiktok":
+  elif data == "tiktok":
     keyboard = [
         [
             InlineKeyboardButton("👤 Followers", callback_data="tt_followers"),
@@ -154,7 +155,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🎵 TikTok Services\n\nChoose a service:", reply_markup=reply_markup
     )
 
-  elif query.data == "tt_followers":
+  elif data == "tt_followers":
     keyboard = [
         [InlineKeyboardButton("1K Followers — 700 ብር", callback_data="tt_f_1k")],
         [InlineKeyboardButton("5K Followers — 2,700 ብር", callback_data="tt_f_5k")],
@@ -170,7 +171,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📈 TikTok Followers\n\nSelect a package:", reply_markup=reply_markup
     )
 
-  elif query.data == "tt_likes":
+  elif data == "tt_likes":
     keyboard = [
         [InlineKeyboardButton("1K Likes — 300 ብር", callback_data="tt_l_1k")],
         [InlineKeyboardButton("5K Likes — 1,200 ብር", callback_data="tt_l_5k")],
@@ -186,7 +187,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "❤️ TikTok Likes\n\nSelect a package:", reply_markup=reply_markup
     )
 
-  elif query.data == "tt_views":
+  elif data == "tt_views":
     keyboard = [
         [InlineKeyboardButton("5K Views — 500 ብር", callback_data="tt_v_5k")],
         [InlineKeyboardButton("10K Views — 800 ብር", callback_data="tt_v_10k")],
@@ -197,7 +198,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👁️ TikTok Views\n\nSelect a package:", reply_markup=reply_markup
     )
 
-  elif query.data == "facebook":
+  elif data == "facebook":
     keyboard = [
         [
             InlineKeyboardButton("👤 Followers", callback_data="fb_followers"),
@@ -213,7 +214,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📘 Facebook Services\n\nChoose a service:", reply_markup=reply_markup
     )
 
-  elif query.data == "fb_followers":
+  elif data == "fb_followers":
     keyboard = [
         [InlineKeyboardButton("1K Followers — 400 ብር", callback_data="fb_f_1k")],
         [InlineKeyboardButton("5K Followers — 1,800 ብር", callback_data="fb_f_5k")],
@@ -229,7 +230,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📈 Facebook Followers\n\nSelect a package:", reply_markup=reply_markup
     )
 
-  elif query.data == "fb_likes":
+  elif data == "fb_likes":
     keyboard = [
         [InlineKeyboardButton("1K Likes — 300 ብር", callback_data="fb_l_1k")],
         [InlineKeyboardButton("5K Likes — 1,200 ብር", callback_data="fb_l_5k")],
@@ -245,7 +246,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "❤️ Facebook Likes\n\nSelect a package:", reply_markup=reply_markup
     )
 
-  elif query.data == "fb_views":
+  elif data == "fb_views":
     keyboard = [
         [InlineKeyboardButton("5K Views — 500 ብር", callback_data="fb_v_5k")],
         [InlineKeyboardButton("10K Views — 800 ብር", callback_data="fb_v_10k")],
@@ -256,7 +257,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👁️ Facebook Views\n\nSelect a package:", reply_markup=reply_markup
     )
 
-  elif query.data == "telegram":
+  elif data == "telegram":
     keyboard = [
         [
             InlineKeyboardButton(
@@ -291,12 +292,12 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
   elif (
-      query.data.startswith("ig_")
-      or query.data.startswith("tt_")
-      or query.data.startswith("fb_")
-      or query.data.startswith("tg_")
+      data.startswith("ig_")
+      or data.startswith("tt_")
+      or data.startswith("fb_")
+      or data.startswith("tg_")
   ):
-    context.user_data["selected_package"] = query.data
+    context.user_data["selected_package"] = data
     context.user_data["step"] = "waiting_for_link"
 
     await query.edit_message_text(
@@ -304,7 +305,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Please send your profile link, username, or post link in the chat now:"
     )
 
-  elif query.data == "back_home":
+  elif data == "back_home":
     context.user_data.clear()
     keyboard = [
         [
@@ -323,6 +324,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# --- FORWARD TEXT TRANSACTION TO ADMIN ---
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
   current_step = context.user_data.get("step")
 
@@ -352,10 +354,11 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_pkg = context.user_data.get("selected_package")
     user_link = context.user_data.get("user_link")
 
+    # Send Notification Direct to Your Personal Telegram
     if ADMIN_ID:
       try:
         admin_message = (
-            "🚨 NEW TEXT ORDER RECEIVED 🚨\n\n"
+            "🚨 NEW ORDER FORWARDED 🚨\n\n"
             f"👤 Customer: {user.full_name} (@{user.username if user.username else 'None'})\n"
             f"🆔 User ID: {user.id}\n"
             f"📦 Package: {selected_pkg}\n"
@@ -364,14 +367,14 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await context.bot.send_message(chat_id=int(ADMIN_ID), text=admin_message)
       except Exception as e:
-        print(f"Admin notification failed: {e}")
+        print(f"Failed to forward order to admin: {e}")
 
     await update.message.reply_text(
-        "🎉 Order Placed Successfully!\n\n"
+        "🎉 Order Submitted Successfully!\n\n"
         f"📦 Package: {selected_pkg}\n"
         f"🔗 Link: {user_link}\n"
-        f"🧾 Payment Info: {payment_info}\n\n"
-        "⏳ Your order is now pending verification. We will process it shortly!\n\n"
+        f"🧾 Payment Ref: {payment_info}\n\n"
+        "⏳ Your order has been forwarded to support for verification!\n\n"
         "Type /start to make another order."
     )
 
@@ -383,6 +386,7 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# --- FORWARD SCREENSHOT TRANSACTION TO ADMIN ---
 async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
   current_step = context.user_data.get("step")
 
@@ -392,10 +396,11 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
     user_link = context.user_data.get("user_link")
     photo_file = update.message.photo[-1].file_id
 
+    # Send Photo Direct to Your Personal Telegram
     if ADMIN_ID:
       try:
         admin_caption = (
-            "🚨 NEW SCREENSHOT ORDER RECEIVED 🚨\n\n"
+            "🚨 NEW SCREENSHOT ORDER FORWARDED 🚨\n\n"
             f"👤 Customer: {user.full_name} (@{user.username if user.username else 'None'})\n"
             f"🆔 User ID: {user.id}\n"
             f"📦 Package: {selected_pkg}\n"
@@ -405,13 +410,13 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
             chat_id=int(ADMIN_ID), photo=photo_file, caption=admin_caption
         )
       except Exception as e:
-        print(f"Admin photo forwarding failed: {e}")
+        print(f"Failed to forward photo to admin: {e}")
 
     await update.message.reply_text(
-        "🎉 Order Placed Successfully with Screenshot!\n\n"
+        "🎉 Screenshot Order Submitted Successfully!\n\n"
         f"📦 Package: {selected_pkg}\n"
         f"🔗 Link: {user_link}\n\n"
-        "⏳ Your order screenshot has been received and is pending verification. We will process it shortly!\n\n"
+        "⏳ Your receipt screenshot has been forwarded to support for verification!\n\n"
         "Type /start to make another order."
     )
 
@@ -423,10 +428,8 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 def main():
-  # Start dummy HTTP server in a separate thread for Render port binding
   threading.Thread(target=run_dummy_server, daemon=True).start()
 
-  # Fix for Python 3.14+ asyncio event loop
   try:
     loop = asyncio.get_event_loop()
   except RuntimeError:
