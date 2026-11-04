@@ -62,6 +62,32 @@ def get_all_users():
     return []
 
 
+def get_delivery_time(selected_pkg: str) -> str:
+  """Determines estimated delivery time based on platform and package size."""
+  if not selected_pkg:
+    return "5 – 6 hours"
+
+  # YouTube logic
+  if selected_pkg.startswith("yt_"):
+    if "1k" in selected_pkg:
+      return "24 – 36 hours"
+    elif "5k" in selected_pkg:
+      return "48 – 72 hours"
+    elif "10k" in selected_pkg:
+      return "5 days max"
+    return "24 – 48 hours"
+
+  # Non-YouTube logic (Instagram, TikTok, Facebook, Telegram)
+  if "1k" in selected_pkg:
+    return "5 – 6 hours"
+  elif "5k" in selected_pkg:
+    return "10 – 12 hours"
+  elif "10k" in selected_pkg or "20k" in selected_pkg or "50k" in selected_pkg:
+    return "18 – 24 hours"
+
+  return "5 – 6 hours"
+
+
 # --- DUMMY HTTP SERVER FOR RENDER WEB SERVICE ---
 def run_dummy_server():
   port = int(os.getenv("PORT", 8080))
@@ -113,7 +139,6 @@ async def user_count(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
   print(f"📊 /users command triggered by User ID: {current_user_id}")
 
-  # Check if sender is authorized (checks string vs string comparison)
   if ADMIN_USER_ID and current_user_id != str(ADMIN_USER_ID):
     await update.message.reply_text(
         "❌ You are not authorized to use this command."
@@ -134,7 +159,6 @@ async def user_count(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user_id = str(update.effective_user.id)
 
-  # Check if sender is authorized
   if ADMIN_USER_ID and user_id != str(ADMIN_USER_ID):
     await update.message.reply_text(
         "❌ You are not authorized to use this command."
@@ -148,12 +172,10 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return
 
-  # Check if the admin attached a photo
   if update.message.photo:
     photo_file_id = update.message.photo[-1].file_id
     caption_text = update.message.caption or ""
 
-    # Clean up any accidental /broadcast text in the caption
     while caption_text.startswith("/broadcast"):
       caption_text = caption_text[len("/broadcast") :].strip()
 
@@ -173,7 +195,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown",
         )
         success_count += 1
-        await asyncio.sleep(0.1)  # Prevent flooding Telegram limits
+        await asyncio.sleep(0.1)
       except Exception:
         fail_count += 1
 
@@ -184,7 +206,6 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
   else:
-    # Text-only broadcast
     message_text = " ".join(context.args)
     if not message_text:
       await update.message.reply_text(
@@ -641,6 +662,7 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     selected_pkg = context.user_data.get("selected_package")
     user_link = context.user_data.get("user_link")
+    delivery_time = get_delivery_time(selected_pkg)
 
     if ADMIN_ID:
       try:
@@ -657,12 +679,13 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Failed to forward order to channel: {e}")
 
     await update.message.reply_text(
-        "🎉 Order Submitted Successfully!\n\n"
-        f"📦 Package: {selected_pkg}\n"
-        f"🔗 Link: {user_link}\n"
-        f"🧾 Payment Ref: {payment_info}\n\n"
-        "⏳ Your order has been forwarded to support for verification!\n\n"
-        "Type /start to make another order."
+        f"🎉 *Order Submitted Successfully!*\n\n"
+        f"📦 *Package:* `{selected_pkg}`\n"
+        f"🔗 *Link:* `{user_link}`\n"
+        f"🧾 *Payment Ref:* `{payment_info}`\n\n"
+        f"⏳ *Estimated Delivery Time:* *{delivery_time}*\n\n"
+        f"🙏 _Your order has been forwarded to support for verification! Type /start to make another order._",
+        parse_mode="Markdown",
     )
 
     context.user_data.clear()
@@ -677,7 +700,6 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user_id = str(update.effective_user.id)
 
-  # If admin sends a photo with a caption, handle it as a photo broadcast
   if ADMIN_USER_ID and user_id == str(ADMIN_USER_ID) and update.message.caption:
     await broadcast(update, context)
     return
@@ -689,6 +711,7 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
     selected_pkg = context.user_data.get("selected_package")
     user_link = context.user_data.get("user_link")
     photo_file = update.message.photo[-1].file_id
+    delivery_time = get_delivery_time(selected_pkg)
 
     if ADMIN_ID:
       try:
@@ -706,11 +729,12 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         print(f"Failed to forward photo to channel: {e}")
 
     await update.message.reply_text(
-        "🎉 Screenshot Order Submitted Successfully!\n\n"
-        f"📦 Package: {selected_pkg}\n"
-        f"🔗 Link: {user_link}\n\n"
-        "⏳ Your receipt screenshot has been forwarded to support for verification!\n\n"
-        "Type /start to make another order."
+        f"🎉 *Screenshot Order Submitted Successfully!*\n\n"
+        f"📦 *Package:* `{selected_pkg}`\n"
+        f"🔗 *Link:* `{user_link}`\n\n"
+        f"⏳ *Estimated Delivery Time:* *{delivery_time}*\n\n"
+        f"🙏 _Your receipt screenshot has been forwarded to support for verification! Type /start to make another order._",
+        parse_mode="Markdown",
     )
 
     context.user_data.clear()
@@ -721,7 +745,6 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 def main():
-  # Initialize SQLite Database on startup
   init_db()
 
   threading.Thread(target=run_dummy_server, daemon=True).start()
