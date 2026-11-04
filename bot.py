@@ -102,41 +102,80 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    message_text = " ".join(context.args)
-    if not message_text:
-        await update.message.reply_text(
-            "⚠️ Please provide a message to broadcast.\nExample: `/broadcast Hello everyone, new prices are live!`",
-            parse_mode="Markdown",
-        )
-        return
-
     users = load_users()
     if not users:
         await update.message.reply_text("⚠️ No users found to broadcast to.")
         return
 
-    success_count = 0
-    fail_count = 0
+    # Check if the admin attached a photo
+    if update.message.photo:
+        photo_file_id = update.message.photo[-1].file_id
+        caption_text = update.message.caption or ""
+        # Remove the '/broadcast' command part from caption if captured automatically by telegram
+        if caption_text.startswith("/broadcast"):
+            caption_text = caption_text[len("/broadcast") :].strip()
 
-    status_msg = await update.message.reply_text(
-        f"📢 Broadcasting to {len(users)} users..."
-    )
+        success_count = 0
+        fail_count = 0
 
-    for uid in users:
-        try:
-            await context.bot.send_message(
-                chat_id=uid, text=message_text, parse_mode="Markdown"
+        status_msg = await update.message.reply_text(
+            f"📢 Broadcasting photo to {len(users)} users..."
+        )
+
+        for uid in users:
+            try:
+                await context.bot.send_photo(
+                    chat_id=uid,
+                    photo=photo_file_id,
+                    caption=caption_text,
+                    parse_mode="Markdown",
+                )
+                success_count += 1
+                await asyncio.sleep(0.1)  # Prevent flooding Telegram limits
+            except Exception:
+                fail_count += 1
+
+        await status_msg.edit_text(
+            f"✅ Photo Broadcast Complete!\n\n"
+            f"📨 Successful: {success_count}\n"
+            f"❌ Failed (blocked/deleted): {fail_count}"
+        )
+
+    else:
+        # Text-only broadcast
+        message_text = " ".join(context.args)
+        if not message_text:
+            await update.message.reply_text(
+                "⚠️ Please provide a message or send a photo with a caption to broadcast.\n\n"
+                "Examples:\n"
+                "• `/broadcast Hello everyone!`\n"
+                "• *Or send an image with the caption `/broadcast New Prices!`*",
+                parse_mode="Markdown",
             )
-            success_count += 1
-            await asyncio.sleep(0.1)  # Prevent flooding Telegram limits
-        except Exception:
-            fail_count += 1
+            return
 
-    await status_msg.edit_text(
-        f"✅ Broadcast Complete!\n\n"
-        f"📨 Successful: {success_count}\n"
-        f"❌ Failed (blocked/deleted): {fail_count}"
-    )
+        success_count = 0
+        fail_count = 0
+
+        status_msg = await update.message.reply_text(
+            f"📢 Broadcasting to {len(users)} users..."
+        )
+
+        for uid in users:
+            try:
+                await context.bot.send_message(
+                    chat_id=uid, text=message_text, parse_mode="Markdown"
+                )
+                success_count += 1
+                await asyncio.sleep(0.1)
+            except Exception:
+                fail_count += 1
+
+        await status_msg.edit_text(
+            f"✅ Broadcast Complete!\n\n"
+            f"📨 Successful: {success_count}\n"
+            f"❌ Failed (blocked/deleted): {fail_count}"
+        )
 
 
 async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -521,6 +560,12 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- FORWARD SCREENSHOT TRANSACTION TO CHANNEL ---
 async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Check if the photo is coming from the admin for a broadcast
+    user_id = str(update.effective_user.id)
+    if ADMIN_USER_ID and user_id == ADMIN_USER_ID and update.message.caption and update.message.caption.startswith("/broadcast"):
+        await broadcast(update, context)
+        return
+
     current_step = context.user_data.get("step")
 
     if current_step == "waiting_for_payment":
