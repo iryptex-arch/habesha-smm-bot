@@ -1,5 +1,6 @@
 import asyncio
 import http.server
+import json
 import os
 import socketserver
 import threading
@@ -18,295 +19,58 @@ from telegram.request import HTTPXRequest
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = "-1004491513977"  # 🔴 Replace with your actual Channel ID (starts with -100)
+ADMIN_ID = "-1004491513977"  # Channel ID for order notifications
+ADMIN_USER_ID = "648718291"  # Your personal Telegram User ID for broadcasting
+
+USERS_FILE = "users.json"
+
+
+# --- USER STORAGE HELPERS ---
+def load_users():
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, "r") as f:
+                return set(json.load(f))
+        except Exception:
+            return set()
+    return set()
+
+
+def save_users(users_set):
+    try:
+        with open(USERS_FILE, "w") as f:
+            json.dump(list(users_set), f)
+    except Exception as e:
+        print(f"Error saving users: {e}")
 
 
 # --- DUMMY HTTP SERVER FOR RENDER WEB SERVICE ---
 def run_dummy_server():
-  port = int(os.getenv("PORT", 8080))
+    port = int(os.getenv("PORT", 8080))
 
-  class SimpleHandler(http.server.SimpleHTTPRequestHandler):
+    class SimpleHandler(http.server.SimpleHTTPRequestHandler):
 
-    def do_GET(self):
-      self.send_response(200)
-      self.end_headers()
-      self.wfile.write(b"Habesha SMM Bot is live!")
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Habesha SMM Bot is live!")
 
-  with socketserver.TCPServer(("", port), SimpleHandler) as httpd:
-    httpd.serve_forever()
+    with socketserver.TCPServer(("", port), SimpleHandler) as httpd:
+        httpd.serve_forever()
 
 
 # --- BOT HANDLERS ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  context.user_data.clear()
+    user = update.effective_user
 
-  keyboard = [
-      [
-          InlineKeyboardButton("📸 Instagram", callback_data="instagram"),
-          InlineKeyboardButton("🎵 TikTok", callback_data="tiktok"),
-      ],
-      [
-          InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
-          InlineKeyboardButton("✈️ Telegram", callback_data="telegram"),
-      ],
-  ]
-  reply_markup = InlineKeyboardMarkup(keyboard)
+    # Save user ID for broadcasting
+    users = load_users()
+    if user.id not in users:
+        users.add(user.id)
+        save_users(users)
 
-  await update.message.reply_text(
-      "🤖 Welcome to Habesha SMM Shop!\n\nChoose a platform:",
-      reply_markup=reply_markup,
-  )
-
-
-async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  query = update.callback_query
-  data = query.data
-  await query.answer()
-
-  if data == "instagram":
-    keyboard = [
-        [
-            InlineKeyboardButton("👤 Followers", callback_data="ig_followers"),
-            InlineKeyboardButton("❤️ Likes", callback_data="ig_likes"),
-        ],
-        [
-            InlineKeyboardButton("👁️ Views", callback_data="ig_views"),
-            InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_home"),
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "📸 Instagram Services\n\nChoose a service:", reply_markup=reply_markup
-    )
-
-  elif data == "ig_followers":
-    keyboard = [
-        [InlineKeyboardButton("1K Followers — 500 ብር", callback_data="ig_f_1k")],
-        [InlineKeyboardButton("5K Followers — 2,300 ብር", callback_data="ig_f_5k")],
-        [
-            InlineKeyboardButton(
-                "10K Followers — 3,500 ብር", callback_data="ig_f_10k"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "50K Followers — 15,000 ብር", callback_data="ig_f_50k"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "⬅️ Back to Instagram Menu", callback_data="instagram"
-            )
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "📈 Instagram Followers\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif data == "ig_likes":
-    keyboard = [
-        [InlineKeyboardButton("1K Likes — 300 ብር", callback_data="ig_l_1k")],
-        [InlineKeyboardButton("5K Likes — 1,200 ብር", callback_data="ig_l_5k")],
-        [
-            InlineKeyboardButton(
-                "10K Likes — 1,800 ብር", callback_data="ig_l_10k"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "⬅️ Back to Instagram Menu", callback_data="instagram"
-            )
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "❤️ Instagram Likes\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif data == "ig_views":
-    keyboard = [
-        [InlineKeyboardButton("5K Views — 500 ብር", callback_data="ig_v_5k")],
-        [InlineKeyboardButton("10K Views — 800 ብር", callback_data="ig_v_10k")],
-        [
-            InlineKeyboardButton(
-                "⬅️ Back to Instagram Menu", callback_data="instagram"
-            )
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "👁️ Instagram Views\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif data == "tiktok":
-    keyboard = [
-        [
-            InlineKeyboardButton("👤 Followers", callback_data="tt_followers"),
-            InlineKeyboardButton("❤️ Likes", callback_data="tt_likes"),
-        ],
-        [
-            InlineKeyboardButton("👁️ Views", callback_data="tt_views"),
-            InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_home"),
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "🎵 TikTok Services\n\nChoose a service:", reply_markup=reply_markup
-    )
-
-  elif data == "tt_followers":
-    keyboard = [
-        [InlineKeyboardButton("1K Followers — 700 ብር", callback_data="tt_f_1k")],
-        [InlineKeyboardButton("5K Followers — 2,700 ብር", callback_data="tt_f_5k")],
-        [
-            InlineKeyboardButton(
-                "10K Followers — 5,000 ብር", callback_data="tt_f_10k"
-            )
-        ],
-        [InlineKeyboardButton("⬅️ Back to TikTok Menu", callback_data="tiktok")],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "📈 TikTok Followers\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif data == "tt_likes":
-    keyboard = [
-        [InlineKeyboardButton("1K Likes — 300 ብር", callback_data="tt_l_1k")],
-        [InlineKeyboardButton("5K Likes — 1,200 ብር", callback_data="tt_l_5k")],
-        [
-            InlineKeyboardButton(
-                "10K Likes — 1,800 ብር", callback_data="tt_l_10k"
-            )
-        ],
-        [InlineKeyboardButton("⬅️ Back to TikTok Menu", callback_data="tiktok")],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "❤️ TikTok Likes\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif data == "tt_views":
-    keyboard = [
-        [InlineKeyboardButton("5K Views — 500 ብር", callback_data="tt_v_5k")],
-        [InlineKeyboardButton("10K Views — 800 ብር", callback_data="tt_v_10k")],
-        [InlineKeyboardButton("⬅️ Back to TikTok Menu", callback_data="tiktok")],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "👁️ TikTok Views\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif data == "facebook":
-    keyboard = [
-        [
-            InlineKeyboardButton("👤 Followers", callback_data="fb_followers"),
-            InlineKeyboardButton("❤️ Likes", callback_data="fb_likes"),
-        ],
-        [
-            InlineKeyboardButton("👁️ Views", callback_data="fb_views"),
-            InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_home"),
-        ],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "📘 Facebook Services\n\nChoose a service:", reply_markup=reply_markup
-    )
-
-  elif data == "fb_followers":
-    keyboard = [
-        [InlineKeyboardButton("1K Followers — 400 ብር", callback_data="fb_f_1k")],
-        [InlineKeyboardButton("5K Followers — 1,800 ብር", callback_data="fb_f_5k")],
-        [
-            InlineKeyboardButton(
-                "10K Followers — 3,300 ብር", callback_data="fb_f_10k"
-            )
-        ],
-        [InlineKeyboardButton("⬅️ Back to Facebook Menu", callback_data="facebook")],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "📈 Facebook Followers\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif data == "fb_likes":
-    keyboard = [
-        [InlineKeyboardButton("1K Likes — 300 ብር", callback_data="fb_l_1k")],
-        [InlineKeyboardButton("5K Likes — 1,200 ብር", callback_data="fb_l_5k")],
-        [
-            InlineKeyboardButton(
-                "10K Likes — 1,800 ብር", callback_data="fb_l_10k"
-            )
-        ],
-        [InlineKeyboardButton("⬅️ Back to Facebook Menu", callback_data="facebook")],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "❤️ Facebook Likes\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif data == "fb_views":
-    keyboard = [
-        [InlineKeyboardButton("5K Views — 500 ብር", callback_data="fb_v_5k")],
-        [InlineKeyboardButton("10K Views — 800 ብር", callback_data="fb_v_10k")],
-        [InlineKeyboardButton("⬅️ Back to Facebook Menu", callback_data="facebook")],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "👁️ Facebook Views\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif data == "telegram":
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                "1K Subscriber — 500 ብር", callback_data="tg_1k"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "5K Subscriber — 2,300 ብር", callback_data="tg_5k"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "10K Subscriber — 3,500 ብር", callback_data="tg_10k"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "20K Subscriber — 6,500 ብር", callback_data="tg_20k"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "50K Subscriber — 15,000 ብር", callback_data="tg_50k"
-            )
-        ],
-        [InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_home")],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        "✈️ Telegram Services\n\nSelect a package:", reply_markup=reply_markup
-    )
-
-  elif (
-      data.startswith("ig_")
-      or data.startswith("tt_")
-      or data.startswith("fb_")
-      or data.startswith("tg_")
-  ):
-    context.user_data["selected_package"] = data
-    context.user_data["step"] = "waiting_for_link"
-
-    await query.edit_message_text(
-        "📦 Package Selected!\n\n"
-        "Please send your profile link, username, or post link in the chat now:"
-    )
-
-  elif data == "back_home":
     context.user_data.clear()
+
     keyboard = [
         [
             InlineKeyboardButton("📸 Instagram", callback_data="instagram"),
@@ -316,145 +80,516 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
             InlineKeyboardButton("✈️ Telegram", callback_data="telegram"),
         ],
+        [
+            InlineKeyboardButton("📺 YouTube", callback_data="youtube"),
+        ],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
+
+    await update.message.reply_text(
         "🤖 Welcome to Habesha SMM Shop!\n\nChoose a platform:",
         reply_markup=reply_markup,
     )
 
 
+async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+
+    # Check if sender is the admin
+    if ADMIN_USER_ID and user_id != ADMIN_USER_ID:
+        await update.message.reply_text(
+            "❌ You are not authorized to use this command."
+        )
+        return
+
+    message_text = " ".join(context.args)
+    if not message_text:
+        await update.message.reply_text(
+            "⚠️ Please provide a message to broadcast.\nExample: `/broadcast Hello everyone, new prices are live!`",
+            parse_mode="Markdown",
+        )
+        return
+
+    users = load_users()
+    if not users:
+        await update.message.reply_text("⚠️ No users found to broadcast to.")
+        return
+
+    success_count = 0
+    fail_count = 0
+
+    status_msg = await update.message.reply_text(
+        f"📢 Broadcasting to {len(users)} users..."
+    )
+
+    for uid in users:
+        try:
+            await context.bot.send_message(
+                chat_id=uid, text=message_text, parse_mode="Markdown"
+            )
+            success_count += 1
+            await asyncio.sleep(0.1)  # Prevent flooding Telegram limits
+        except Exception:
+            fail_count += 1
+
+    await status_msg.edit_text(
+        f"✅ Broadcast Complete!\n\n"
+        f"📨 Successful: {success_count}\n"
+        f"❌ Failed (blocked/deleted): {fail_count}"
+    )
+
+
+async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    data = query.data
+    await query.answer()
+
+    if data == "instagram":
+        keyboard = [
+            [
+                InlineKeyboardButton("👤 Followers", callback_data="ig_followers"),
+                InlineKeyboardButton("❤️ Likes", callback_data="ig_likes"),
+            ],
+            [
+                InlineKeyboardButton("👁️ Views", callback_data="ig_views"),
+                InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_home"),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📸 Instagram Services\n\nChoose a service:", reply_markup=reply_markup
+        )
+
+    elif data == "ig_followers":
+        keyboard = [
+            [InlineKeyboardButton("1K Followers — 450 ብር", callback_data="ig_f_1k")],
+            [InlineKeyboardButton("5K Followers — 2,100 ብር", callback_data="ig_f_5k")],
+            [
+                InlineKeyboardButton(
+                    "10K Followers — 3,300 ብር", callback_data="ig_f_10k"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "50K Followers — 14,000 ብር", callback_data="ig_f_50k"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "⬅️ Back to Instagram Menu", callback_data="instagram"
+                )
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📈 Instagram Followers\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "ig_likes":
+        keyboard = [
+            [InlineKeyboardButton("1K Likes — 280 ብር", callback_data="ig_l_1k")],
+            [InlineKeyboardButton("5K Likes — 1,100 ብር", callback_data="ig_l_5k")],
+            [
+                InlineKeyboardButton(
+                    "10K Likes — 1,700 ብር", callback_data="ig_l_10k"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "⬅️ Back to Instagram Menu", callback_data="instagram"
+                )
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "❤️ Instagram Likes\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "ig_views":
+        keyboard = [
+            [InlineKeyboardButton("5K Views — 450 ብር", callback_data="ig_v_5k")],
+            [InlineKeyboardButton("10K Views — 750 ብር", callback_data="ig_v_10k")],
+            [
+                InlineKeyboardButton(
+                    "⬅️ Back to Instagram Menu", callback_data="instagram"
+                )
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "👁️ Instagram Views\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "tiktok":
+        keyboard = [
+            [
+                InlineKeyboardButton("👤 Followers", callback_data="tt_followers"),
+                InlineKeyboardButton("❤️ Likes", callback_data="tt_likes"),
+            ],
+            [
+                InlineKeyboardButton("👁️ Views", callback_data="tt_views"),
+                InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_home"),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "🎵 TikTok Services\n\nChoose a service:", reply_markup=reply_markup
+        )
+
+    elif data == "tt_followers":
+        keyboard = [
+            [InlineKeyboardButton("1K Followers — 650 ብር", callback_data="tt_f_1k")],
+            [InlineKeyboardButton("5K Followers — 2,500 ብር", callback_data="tt_f_5k")],
+            [
+                InlineKeyboardButton(
+                    "10K Followers — 4,800 ብር", callback_data="tt_f_10k"
+                )
+            ],
+            [InlineKeyboardButton("⬅️ Back to TikTok Menu", callback_data="tiktok")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📈 TikTok Followers\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "tt_likes":
+        keyboard = [
+            [InlineKeyboardButton("1K Likes — 280 ብር", callback_data="tt_l_1k")],
+            [InlineKeyboardButton("5K Likes — 1,100 ብር", callback_data="tt_l_5k")],
+            [
+                InlineKeyboardButton(
+                    "10K Likes — 1,700 ብር", callback_data="tt_l_10k"
+                )
+            ],
+            [InlineKeyboardButton("⬅️ Back to TikTok Menu", callback_data="tiktok")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "❤️ TikTok Likes\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "tt_views":
+        keyboard = [
+            [InlineKeyboardButton("5K Views — 450 ብር", callback_data="tt_v_5k")],
+            [InlineKeyboardButton("10K Views — 750 ብር", callback_data="tt_v_10k")],
+            [InlineKeyboardButton("⬅️ Back to TikTok Menu", callback_data="tiktok")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "👁️ TikTok Views\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "facebook":
+        keyboard = [
+            [
+                InlineKeyboardButton("👤 Followers", callback_data="fb_followers"),
+                InlineKeyboardButton("❤️ Likes", callback_data="fb_likes"),
+            ],
+            [
+                InlineKeyboardButton("👁️ Views", callback_data="fb_views"),
+                InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_home"),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📘 Facebook Services\n\nChoose a service:", reply_markup=reply_markup
+        )
+
+    elif data == "fb_followers":
+        keyboard = [
+            [InlineKeyboardButton("1K Followers — 380 ብር", callback_data="fb_f_1k")],
+            [InlineKeyboardButton("5K Followers — 1,700 ብር", callback_data="fb_f_5k")],
+            [
+                InlineKeyboardButton(
+                    "10K Followers — 3,100 ብር", callback_data="fb_f_10k"
+                )
+            ],
+            [InlineKeyboardButton("⬅️ Back to Facebook Menu", callback_data="facebook")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📈 Facebook Followers\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "fb_likes":
+        keyboard = [
+            [InlineKeyboardButton("1K Likes — 280 ብር", callback_data="fb_l_1k")],
+            [InlineKeyboardButton("5K Likes — 1,100 ብር", callback_data="fb_l_5k")],
+            [
+                InlineKeyboardButton(
+                    "10K Likes — 1,700 ብር", callback_data="fb_l_10k"
+                )
+            ],
+            [InlineKeyboardButton("⬅️ Back to Facebook Menu", callback_data="facebook")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "❤️ Facebook Likes\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "fb_views":
+        keyboard = [
+            [InlineKeyboardButton("5K Views — 450 ብር", callback_data="fb_v_5k")],
+            [InlineKeyboardButton("10K Views — 750 ብር", callback_data="fb_v_10k")],
+            [InlineKeyboardButton("⬅️ Back to Facebook Menu", callback_data="facebook")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "👁️ Facebook Views\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "telegram":
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "1K Subscriber — 450 ብር", callback_data="tg_1k"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "5K Subscriber — 2,100 ብር", callback_data="tg_5k"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "10K Subscriber — 3,300 ብር", callback_data="tg_10k"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "20K Subscriber — 6,200 ብር", callback_data="tg_20k"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "50K Subscriber — 14,000 ብር", callback_data="tg_50k"
+                )
+            ],
+            [InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_home")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "✈️ Telegram Services\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "youtube":
+        keyboard = [
+            [
+                InlineKeyboardButton("👤 Subscribers", callback_data="yt_subs"),
+                InlineKeyboardButton("👁️ Views", callback_data="yt_views"),
+            ],
+            [
+                InlineKeyboardButton("❤️ Likes", callback_data="yt_likes"),
+                InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_home"),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📺 YouTube Services\n\nChoose a service:", reply_markup=reply_markup
+        )
+
+    elif data == "yt_subs":
+        keyboard = [
+            [InlineKeyboardButton("1K Subscribers — 800 ብር", callback_data="yt_s_1k")],
+            [InlineKeyboardButton("5K Subscribers — 3,800 ብር", callback_data="yt_s_5k")],
+            [InlineKeyboardButton("⬅️ Back to YouTube Menu", callback_data="youtube")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📈 YouTube Subscribers\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "yt_views":
+        keyboard = [
+            [InlineKeyboardButton("1K Views — 400 ብር", callback_data="yt_v_1k")],
+            [InlineKeyboardButton("5K Views — 1,800 ብር", callback_data="yt_v_5k")],
+            [InlineKeyboardButton("⬅️ Back to YouTube Menu", callback_data="youtube")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "👁️ YouTube Views\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif data == "yt_likes":
+        keyboard = [
+            [InlineKeyboardButton("1K Likes — 350 ብር", callback_data="yt_l_1k")],
+            [InlineKeyboardButton("5K Likes — 1,500 ብር", callback_data="yt_l_5k")],
+            [InlineKeyboardButton("⬅️ Back to YouTube Menu", callback_data="youtube")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "❤️ YouTube Likes\n\nSelect a package:", reply_markup=reply_markup
+        )
+
+    elif (
+        data.startswith("ig_")
+        or data.startswith("tt_")
+        or data.startswith("fb_")
+        or data.startswith("tg_")
+        or data.startswith("yt_")
+    ):
+        context.user_data["selected_package"] = data
+        context.user_data["step"] = "waiting_for_link"
+
+        await query.edit_message_text(
+            "📦 Package Selected!\n\n"
+            "Please send your profile link, username, or post link in the chat now:"
+        )
+
+    elif data == "back_home":
+        context.user_data.clear()
+        keyboard = [
+            [
+                InlineKeyboardButton("📸 Instagram", callback_data="instagram"),
+                InlineKeyboardButton("🎵 TikTok", callback_data="tiktok"),
+            ],
+            [
+                InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
+                InlineKeyboardButton("✈️ Telegram", callback_data="telegram"),
+            ],
+            [
+                InlineKeyboardButton("📺 YouTube", callback_data="youtube"),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "🤖 Welcome to Habesha SMM Shop!\n\nChoose a platform:",
+            reply_markup=reply_markup,
+        )
+
+
 # --- FORWARD TEXT TRANSACTION TO CHANNEL ---
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  current_step = context.user_data.get("step")
+    current_step = context.user_data.get("step")
 
-  if current_step == "waiting_for_link":
-    user_link = update.message.text
-    context.user_data["user_link"] = user_link
-    context.user_data["step"] = "waiting_for_payment"
-    selected_pkg = context.user_data.get("selected_package")
+    if current_step == "waiting_for_link":
+        user_link = update.message.text
+        context.user_data["user_link"] = user_link
+        context.user_data["step"] = "waiting_for_payment"
+        selected_pkg = context.user_data.get("selected_package")
 
-    await update.message.reply_text(
-        f"🔗 Link Saved: {user_link}\n\n"
-        "🏦💵 Payment Method 💵🏦\n"
-        "▫️▫️▫️▫️▫️▫️▫️▫️▫️▫️▫️▫️\n"
-        "🟣 CBE: 1000452732298 (Emran)\n"
-        "▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️\n"
-        "🟢 TeleBirr: 0905145557 (Imran)\n"
-        "▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️\n"
-        "🟡 Abyssinia: 236272486 (Imran)\n"
-        "▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️\n\n"
-        f"Selected Package: {selected_pkg}\n\n"
-        "📲 Please send your transaction reference number OR a screenshot photo of your receipt."
-    )
+        await update.message.reply_text(
+            f"🔗 Link Saved: {user_link}\n\n"
+            "🏦💵 Payment Method 💵🏦\n"
+            "▫️▫️▫️▫️▫️▫️▫️▫️▫️▫️▫️▫️\n"
+            "🟣 CBE: 1000452732298 (Emran)\n"
+            "▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️\n"
+            "🟢 TeleBirr: 0905145557 (Imran)\n"
+            "▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️\n"
+            "🟡 Abyssinia: 236272486 (Imran)\n"
+            "▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️\n\n"
+            f"Selected Package: {selected_pkg}\n\n"
+            "📲 Please send your transaction reference number OR a screenshot photo of your receipt."
+        )
 
-  elif current_step == "waiting_for_payment":
-    payment_info = update.message.text
-    user = update.effective_user
-    selected_pkg = context.user_data.get("selected_package")
-    user_link = context.user_data.get("user_link")
+    elif current_step == "waiting_for_payment":
+        payment_info = update.message.text
+        user = update.effective_user
+        selected_pkg = context.user_data.get("selected_package")
+        user_link = context.user_data.get("user_link")
 
-    if ADMIN_ID:
-      try:
-        admin_message = (
-            "🚨 NEW ORDER FORWARDED 🚨\n\n"
-            f"👤 Customer: {user.full_name} (@{user.username if user.username else 'None'})\n"
-            f"🆔 User ID: {user.id}\n"
+        if ADMIN_ID:
+            try:
+                admin_message = (
+                    "🚨 NEW ORDER FORWARDED 🚨\n\n"
+                    f"👤 Customer: {user.full_name} (@{user.username if user.username else 'None'})\n"
+                    f"🆔 User ID: {user.id}\n"
+                    f"📦 Package: {selected_pkg}\n"
+                    f"🔗 Link: {user_link}\n"
+                    f"🧾 Payment Ref: {payment_info}"
+                )
+                await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message)
+            except Exception as e:
+                print(f"Failed to forward order to channel: {e}")
+
+        await update.message.reply_text(
+            "🎉 Order Submitted Successfully!\n\n"
             f"📦 Package: {selected_pkg}\n"
             f"🔗 Link: {user_link}\n"
-            f"🧾 Payment Ref: {payment_info}"
+            f"🧾 Payment Ref: {payment_info}\n\n"
+            "⏳ Your order has been forwarded to support for verification!\n\n"
+            "Type /start to make another order."
         )
-        await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message)
-      except Exception as e:
-        print(f"Failed to forward order to channel: {e}")
 
-    await update.message.reply_text(
-        "🎉 Order Submitted Successfully!\n\n"
-        f"📦 Package: {selected_pkg}\n"
-        f"🔗 Link: {user_link}\n"
-        f"🧾 Payment Ref: {payment_info}\n\n"
-        "⏳ Your order has been forwarded to support for verification!\n\n"
-        "Type /start to make another order."
-    )
+        context.user_data.clear()
 
-    context.user_data.clear()
-
-  else:
-    await update.message.reply_text(
-        "Please use /start to begin or click a package first!"
-    )
+    else:
+        await update.message.reply_text(
+            "Please use /start to begin or click a package first!"
+        )
 
 
 # --- FORWARD SCREENSHOT TRANSACTION TO CHANNEL ---
 async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  current_step = context.user_data.get("step")
+    current_step = context.user_data.get("step")
 
-  if current_step == "waiting_for_payment":
-    user = update.effective_user
-    selected_pkg = context.user_data.get("selected_package")
-    user_link = context.user_data.get("user_link")
-    photo_file = update.message.photo[-1].file_id
+    if current_step == "waiting_for_payment":
+        user = update.effective_user
+        selected_pkg = context.user_data.get("selected_package")
+        user_link = context.user_data.get("user_link")
+        photo_file = update.message.photo[-1].file_id
 
-    if ADMIN_ID:
-      try:
-        admin_caption = (
-            "🚨 NEW SCREENSHOT ORDER FORWARDED 🚨\n\n"
-            f"👤 Customer: {user.full_name} (@{user.username if user.username else 'None'})\n"
-            f"🆔 User ID: {user.id}\n"
+        if ADMIN_ID:
+            try:
+                admin_caption = (
+                    "🚨 NEW SCREENSHOT ORDER FORWARDED 🚨\n\n"
+                    f"👤 Customer: {user.full_name} (@{user.username if user.username else 'None'})\n"
+                    f"🆔 User ID: {user.id}\n"
+                    f"📦 Package: {selected_pkg}\n"
+                    f"🔗 Link: {user_link}"
+                )
+                await context.bot.send_photo(
+                    chat_id=ADMIN_ID, photo=photo_file, caption=admin_caption
+                )
+            except Exception as e:
+                print(f"Failed to forward photo to channel: {e}")
+
+        await update.message.reply_text(
+            "🎉 Screenshot Order Submitted Successfully!\n\n"
             f"📦 Package: {selected_pkg}\n"
-            f"🔗 Link: {user_link}"
+            f"🔗 Link: {user_link}\n\n"
+            "⏳ Your receipt screenshot has been forwarded to support for verification!\n\n"
+            "Type /start to make another order."
         )
-        await context.bot.send_photo(
-            chat_id=ADMIN_ID, photo=photo_file, caption=admin_caption
+
+        context.user_data.clear()
+    else:
+        await update.message.reply_text(
+            "Please start an order first by pressing /start!"
         )
-      except Exception as e:
-        print(f"Failed to forward photo to channel: {e}")
-
-    await update.message.reply_text(
-        "🎉 Screenshot Order Submitted Successfully!\n\n"
-        f"📦 Package: {selected_pkg}\n"
-        f"🔗 Link: {user_link}\n\n"
-        "⏳ Your receipt screenshot has been forwarded to support for verification!\n\n"
-        "Type /start to make another order."
-    )
-
-    context.user_data.clear()
-  else:
-    await update.message.reply_text(
-        "Please start an order first by pressing /start!"
-    )
 
 
 def main():
-  threading.Thread(target=run_dummy_server, daemon=True).start()
+    threading.Thread(target=run_dummy_server, daemon=True).start()
 
-  try:
-    loop = asyncio.get_event_loop()
-  except RuntimeError:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
-  custom_request = HTTPXRequest(read_timeout=30.0, connect_timeout=30.0)
-  app = (
-      Application.builder().token(TOKEN).request(custom_request).build()
-  )
+    custom_request = HTTPXRequest(read_timeout=30.0, connect_timeout=30.0)
+    app = (
+        Application.builder().token(TOKEN).request(custom_request).build()
+    )
 
-  async def post_init(application: Application):
-    await application.bot.delete_webhook(drop_pending_updates=True)
-    print("🧹 Cleared old webhooks successfully!")
+    async def post_init(application: Application):
+        await application.bot.delete_webhook(drop_pending_updates=True)
+        print("🧹 Cleared old webhooks successfully!")
 
-  app.post_init = post_init
+    app.post_init = post_init
 
-  app.add_handler(CommandHandler("start", start))
-  app.add_handler(CallbackQueryHandler(button_click))
-  app.add_handler(
-      MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input)
-  )
-  app.add_handler(MessageHandler(filters.PHOTO, handle_photo_input))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("broadcast", broadcast))
+    app.add_handler(CallbackQueryHandler(button_click))
+    app.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input)
+    )
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo_input))
 
-  print("Habesha SMM Shop bot is running...")
-  app.run_polling()
+    print("Habesha SMM Shop bot is running...")
+    app.run_polling()
 
 
 if __name__ == "__main__":
-  main()
+    main()
