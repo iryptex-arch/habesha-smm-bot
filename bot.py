@@ -134,7 +134,7 @@ async def user_count(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user_id = str(update.effective_user.id)
 
-  # Check if sender is the admin
+  # Check if sender is authorized
   if ADMIN_USER_ID and user_id != str(ADMIN_USER_ID):
     await update.message.reply_text(
         "❌ You are not authorized to use this command."
@@ -154,7 +154,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     caption_text = update.message.caption or ""
 
     # Clean up any accidental /broadcast text in the caption
-    if caption_text.startswith("/broadcast"):
+    while caption_text.startswith("/broadcast"):
       caption_text = caption_text[len("/broadcast") :].strip()
 
     success_count = 0
@@ -247,22 +247,22 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
             InlineKeyboardButton(
-                "1K Followers — 450 ብር", callback_data="ig_f_1k"
+                "1K Followers — 600 ብር", callback_data="ig_f_1k"
             )
         ],
         [
             InlineKeyboardButton(
-                "5K Followers — 2,100 ብር", callback_data="ig_f_5k"
+                "5K Followers — 2,500 ብር", callback_data="ig_f_5k"
             )
         ],
         [
             InlineKeyboardButton(
-                "10K Followers — 3,300 ብር", callback_data="ig_f_10k"
+                "10K Followers — 4,500 ብር", callback_data="ig_f_10k"
             )
         ],
         [
             InlineKeyboardButton(
-                "50K Followers — 14,000 ብር", callback_data="ig_f_50k"
+                "50K Followers — 20,000 ብር", callback_data="ig_f_50k"
             )
         ],
         [
@@ -333,17 +333,17 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
             InlineKeyboardButton(
-                "1K Followers — 650 ብር", callback_data="tt_f_1k"
+                "1K Followers — 800 ብር", callback_data="tt_f_1k"
             )
         ],
         [
             InlineKeyboardButton(
-                "5K Followers — 2,500 ብር", callback_data="tt_f_5k"
+                "5K Followers — 3,500 ብር", callback_data="tt_f_5k"
             )
         ],
         [
             InlineKeyboardButton(
-                "10K Followers — 4,800 ብር", callback_data="tt_f_10k"
+                "10K Followers — 6,500 ብር", callback_data="tt_f_10k"
             )
         ],
         [
@@ -414,17 +414,17 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
             InlineKeyboardButton(
-                "1K Followers — 380 ብር", callback_data="fb_f_1k"
+                "1K Followers — 500 ብር", callback_data="fb_f_1k"
             )
         ],
         [
             InlineKeyboardButton(
-                "5K Followers — 1,700 ብር", callback_data="fb_f_5k"
+                "5K Followers — 2,000 ብር", callback_data="fb_f_5k"
             )
         ],
         [
             InlineKeyboardButton(
-                "10K Followers — 3,100 ብር", callback_data="fb_f_10k"
+                "10K Followers — 3,500 ብር", callback_data="fb_f_10k"
             )
         ],
         [
@@ -477,17 +477,17 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
             InlineKeyboardButton(
-                "1K Subscriber — 450 ብር", callback_data="tg_1k"
+                "1K Subscriber — 500 ብር", callback_data="tg_1k"
             )
         ],
         [
             InlineKeyboardButton(
-                "5K Subscriber — 2,100 ብር", callback_data="tg_5k"
+                "5K Subscriber — 2,000 ብር", callback_data="tg_5k"
             )
         ],
         [
             InlineKeyboardButton(
-                "10K Subscriber — 3,300 ብር", callback_data="tg_10k"
+                "10K Subscriber — 3,500 ብር", callback_data="tg_10k"
             )
         ],
         [
@@ -533,12 +533,17 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
             InlineKeyboardButton(
-                "1K Subscribers — 800 ብር", callback_data="yt_s_1k"
+                "1K Subscribers — 2,000 ብር", callback_data="yt_s_1k"
             )
         ],
         [
             InlineKeyboardButton(
-                "5K Subscribers — 3,800 ብር", callback_data="yt_s_5k"
+                "5K Subscribers — 9,000 ብር", callback_data="yt_s_5k"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "10K Subscribers — 17,500 ብር", callback_data="yt_s_10k"
             )
         ],
         [InlineKeyboardButton("⬅️ Back to YouTube Menu", callback_data="youtube")],
@@ -736,10 +741,10 @@ def main():
 
   app.post_init = post_init
 
-  # 🟢 COMMAND HANDLERS MUST BE REGISTERED FIRST BEFORE MESSAGE HANDLERS
+  # Command Handlers
   app.add_handler(CommandHandler("start", start))
   app.add_handler(CommandHandler("users", user_count))
-  app.add_handler(CommandHandler("user", user_count))  # Supports /user as well
+  app.add_handler(CommandHandler("user", user_count))
   app.add_handler(CommandHandler("broadcast", broadcast))
 
   # Callback and Message Handlers
