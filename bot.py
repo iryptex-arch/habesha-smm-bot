@@ -1,7 +1,7 @@
 import asyncio
 import http.server
-import json
 import os
+import sqlite3
 import socketserver
 import threading
 from dotenv import load_dotenv
@@ -22,26 +22,48 @@ TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = "-1004491513977"  # Channel ID for order notifications
 ADMIN_USER_ID = "648718291"  # Your personal Telegram User ID for broadcasting
 
-USERS_FILE = "users.json"
+DB_FILE = "users.db"
 
 
-# --- USER STORAGE HELPERS ---
-def load_users():
-    if os.path.exists(USERS_FILE):
-        try:
-            with open(USERS_FILE, "r") as f:
-                return set(json.load(f))
-        except Exception:
-            return set()
-    return set()
+# --- DATABASE SETUP & HELPERS ---
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY
+        )
+    """
+    )
+    conn.commit()
+    conn.close()
 
 
-def save_users(users_set):
+def add_user_to_db(user_id):
     try:
-        with open(USERS_FILE, "w") as f:
-            json.dump(list(users_set), f)
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,)
+        )
+        conn.commit()
+        conn.close()
     except Exception as e:
-        print(f"Error saving users: {e}")
+        print(f"Error saving user to DB: {e}")
+
+
+def get_all_users():
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id FROM users")
+        rows = cursor.fetchall()
+        conn.close()
+        return [row[0] for row in rows]
+    except Exception as e:
+        print(f"Error fetching users from DB: {e}")
+        return []
 
 
 # --- DUMMY HTTP SERVER FOR RENDER WEB SERVICE ---
@@ -63,11 +85,8 @@ def run_dummy_server():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
-    # Save user ID for broadcasting
-    users = load_users()
-    if user.id not in users:
-        users.add(user.id)
-        save_users(users)
+    # Save user ID to SQLite database
+    add_user_to_db(user.id)
 
     context.user_data.clear()
 
@@ -102,16 +121,19 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    users = load_users()
+    users = get_all_users()
     if not users:
-        await update.message.reply_text("⚠️ No users found to broadcast to.")
+        await update.message.reply_text(
+            "⚠️ No users found in the database yet. (Make sure at least one user has clicked /start!)"
+        )
         return
 
     # Check if the admin attached a photo
     if update.message.photo:
         photo_file_id = update.message.photo[-1].file_id
         caption_text = update.message.caption or ""
-        # Remove the '/broadcast' command part from caption if captured automatically by telegram
+
+        # Clean up any accidental /broadcast text in the caption
         if caption_text.startswith("/broadcast"):
             caption_text = caption_text[len("/broadcast") :].strip()
 
@@ -149,7 +171,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "⚠️ Please provide a message or send a photo with a caption to broadcast.\n\n"
                 "Examples:\n"
                 "• `/broadcast Hello everyone!`\n"
-                "• *Or send an image with the caption `/broadcast New Prices!`*",
+                "• *Or send an image with your text in the caption box*",
                 parse_mode="Markdown",
             )
             return
@@ -560,9 +582,10 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- FORWARD SCREENSHOT TRANSACTION TO CHANNEL ---
 async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Check if the photo is coming from the admin for a broadcast
     user_id = str(update.effective_user.id)
-    if ADMIN_USER_ID and user_id == ADMIN_USER_ID and update.message.caption and update.message.caption.startswith("/broadcast"):
+    
+    # If admin sends a photo with a caption, handle it as a photo broadcast
+    if ADMIN_USER_ID and user_id == ADMIN_USER_ID and update.message.caption:
         await broadcast(update, context)
         return
 
@@ -605,6 +628,9 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 def main():
+    # Initialize SQLite Database on startup
+    init_db()
+
     threading.Thread(target=run_dummy_server, daemon=True).start()
 
     try:
