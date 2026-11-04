@@ -108,18 +108,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def user_count(update: Update, context: ContextTypes.DEFAULT_TYPE):
-  user_id = str(update.effective_user.id)
+  user = update.effective_user
+  current_user_id = str(user.id)
 
-  # Check if sender is the admin
-  if ADMIN_USER_ID and user_id != ADMIN_USER_ID:
+  print(f"📊 /users command triggered by User ID: {current_user_id}")
+
+  # Check if sender is authorized (checks string vs string comparison)
+  if ADMIN_USER_ID and current_user_id != str(ADMIN_USER_ID):
     await update.message.reply_text(
         "❌ You are not authorized to use this command."
     )
     return
 
   users = get_all_users()
+  total_count = len(users)
+
   await update.message.reply_text(
-      f"📊 **Bot Statistics**\n\nTotal Subscribed Users: `{len(users)}`",
+      f"📊 *Habesha SMM Bot Stats*\n\n"
+      f"👥 *Total Subscribed Users:* `{total_count}`\n\n"
+      f"_Type /broadcast to send an announcement to all users._",
       parse_mode="Markdown",
   )
 
@@ -128,7 +135,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user_id = str(update.effective_user.id)
 
   # Check if sender is the admin
-  if ADMIN_USER_ID and user_id != ADMIN_USER_ID:
+  if ADMIN_USER_ID and user_id != str(ADMIN_USER_ID):
     await update.message.reply_text(
         "❌ You are not authorized to use this command."
     )
@@ -666,7 +673,7 @@ async def handle_photo_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
   user_id = str(update.effective_user.id)
 
   # If admin sends a photo with a caption, handle it as a photo broadcast
-  if ADMIN_USER_ID and user_id == ADMIN_USER_ID and update.message.caption:
+  if ADMIN_USER_ID and user_id == str(ADMIN_USER_ID) and update.message.caption:
     await broadcast(update, context)
     return
 
@@ -729,9 +736,13 @@ def main():
 
   app.post_init = post_init
 
+  # 🟢 COMMAND HANDLERS MUST BE REGISTERED FIRST BEFORE MESSAGE HANDLERS
   app.add_handler(CommandHandler("start", start))
   app.add_handler(CommandHandler("users", user_count))
+  app.add_handler(CommandHandler("user", user_count))  # Supports /user as well
   app.add_handler(CommandHandler("broadcast", broadcast))
+
+  # Callback and Message Handlers
   app.add_handler(CallbackQueryHandler(button_click))
   app.add_handler(
       MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input)
